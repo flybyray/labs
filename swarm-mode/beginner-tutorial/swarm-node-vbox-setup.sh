@@ -14,16 +14,33 @@ workers=3
 echo "======> Creating $managers manager machines ...";
 for node in $(seq 1 $managers);
 do
+	(
 	echo "======> Creating manager$node machine ...";
 	docker-machine create -d virtualbox manager$node;
+	) &
+    managers_pids[${node}]=$!
 done
 
 # create worker machines
 echo "======> Creating $workers worker machines ...";
 for node in $(seq 1 $workers);
 do
+	(
 	echo "======> Creating worker$node machine ...";
 	docker-machine create -d virtualbox worker$node;
+	) &
+    workers_pids[${node}]=$!
+done
+
+echo "======> Waiting for background jobs ...";
+jobs -p
+echo "======> Waiting for managers nodes ...";
+for pid in ${managers_pids[*]}; do
+  wait $pid
+done
+echo "======> Waiting for workers nodes ...";
+for pid in ${workers_pids[*]}; do
+  wait $pid
 done
 
 # list all machines
